@@ -30,10 +30,13 @@ class CinemaHallSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "rows", "seats_in_row", "capacity")
 
 
+# Базовый сериализатор фильма: поле 'image' добавлено в read_only_fields,
+# чтобы его нельзя было передать при обычном POST-запросе создания фильма.
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = ("id", "title", "description", "duration", "genres", "actors")
+        fields = ("id", "title", "description", "duration", "genres", "actors", "image")
+        read_only_fields = ("image",)
 
 
 class MovieListSerializer(MovieSerializer):
@@ -51,7 +54,14 @@ class MovieDetailSerializer(MovieSerializer):
 
     class Meta:
         model = Movie
-        fields = ("id", "title", "description", "duration", "genres", "actors")
+        fields = ("id", "title", "description", "duration", "genres", "actors", "image")
+
+
+# Отдельный сериализатор исключительно для загрузки изображений через /upload-image/
+class MovieImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ("id", "image")
 
 
 class MovieSessionSerializer(serializers.ModelSerializer):
@@ -62,6 +72,8 @@ class MovieSessionSerializer(serializers.ModelSerializer):
 
 class MovieSessionListSerializer(MovieSessionSerializer):
     movie_title = serializers.CharField(source="movie.title", read_only=True)
+    # Добавляем url картинки фильма для списка сессий:
+    movie_image = serializers.ImageField(source="movie.image", read_only=True)
     cinema_hall_name = serializers.CharField(
         source="cinema_hall.name", read_only=True
     )
@@ -76,6 +88,7 @@ class MovieSessionListSerializer(MovieSessionSerializer):
             "id",
             "show_time",
             "movie_title",
+            "movie_image",
             "cinema_hall_name",
             "cinema_hall_capacity",
             "tickets_available",
@@ -105,6 +118,8 @@ class TicketSeatsSerializer(TicketSerializer):
         fields = ("row", "seat")
 
 
+# Здесь movie использует MovieListSerializer, в котором теперь есть 'image'.
+# Таким образом, структура movie -> image на детальной странице сессии соблюдена.
 class MovieSessionDetailSerializer(MovieSessionSerializer):
     movie = MovieListSerializer(many=False, read_only=True)
     cinema_hall = CinemaHallSerializer(many=False, read_only=True)
