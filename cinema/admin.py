@@ -10,10 +10,12 @@ from .models import (
     Ticket,
 )
 
+
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
     list_display = ("title", "duration")
     search_fields = ("title",)
+
 
 admin.site.register(CinemaHall)
 admin.site.register(Genre)
